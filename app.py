@@ -5,6 +5,8 @@ import numpy as np
 import gdown
 import tempfile
 import os
+import joblib
+import psutil
 
 @st.cache_data
 def get_km_range_from_pipeline(_pipeline):   # ← underline no nome
@@ -74,7 +76,7 @@ h2 {
 
 /* ================== SIDEBAR ================== */
 [data-testid="stSidebar"] * {
-    color: var(--text-dark) !important;
+    color: var(--text-light) !important;
 }
 
 /* ================== WIDGETS ================== */
@@ -212,7 +214,7 @@ def show_header():
 # 📥 CARREGAMENTO DE MODELO E DADOS
 # ==============================================
 # 📥 CARREGAMENTO DE MODELO E DADOS
-@st.cache_resource
+@st.cache_resource(max_entries=1)
 def load_pipeline():
     try:
         # Novo ID do arquivo do Google Drive
@@ -226,7 +228,7 @@ def load_pipeline():
         gdown.download(url, output_path, quiet=False)
 
         with open(output_path, "rb") as f:
-            obj = pickle.load(f)
+            obj = joblib.load(f)
 
         return obj['pipeline'], obj['base_cols']
 
@@ -422,28 +424,35 @@ def model_info_section():
 # ==============================================
 # 📌 FUNÇÃO PRINCIPAL
 # ==============================================
+def print_memory_usage():
+    process = psutil.Process(os.getpid())
+    st.write(f"🧠 Memória usada: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+
+print_memory_usage()
+
 def main():
     show_header()
-
-    pipeline, base_cols = load_pipeline()
-    if pipeline is None:
-        return
-
-    km_range = get_km_range_from_pipeline(pipeline)
 
     model_info_section()
 
     tab1, tab2 = st.tabs(["🔮 Previsão Individual", "📁 Processar Arquivo"])
 
     with tab1:
+        km_range = (0, 1000)  # Valores padrão
         dados, submitted = input_data_interface(km_range)
         if submitted:
+            # Carrega o modelo apenas se necessário
+            pipeline, base_cols = load_pipeline()
+            if pipeline is None:
+                return
             show_results(pipeline, dados, base_cols)
 
-    # --- Processar CSV ---
     with tab2:
         uploaded = st.file_uploader("CSV para previsão", type="csv")
         if uploaded:
+            pipeline, base_cols = load_pipeline()
+            if pipeline is None:
+                return
             df = pd.read_csv(uploaded)
             if set(df.columns) != set(base_cols):
                 st.error("Colunas do CSV não batem com o modelo.")
@@ -451,9 +460,7 @@ def main():
                 prev = pipeline.predict(df)
                 df['Previsão'] = prev
                 st.dataframe(df, use_container_width=True)
-                st.download_button("Baixar resultados",
-                                   df.to_csv(index=False).encode(),
-                                   "previsao_prf.csv","text/csv")
+                st.download_button(...)
 
     st.markdown("---")
     st.caption("Dados PRF 2024 • Antonio Ramalho & Allan Victor")
