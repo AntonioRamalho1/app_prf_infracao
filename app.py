@@ -218,8 +218,8 @@ def show_header():
 def load_pipeline():
     try:
         # Novo ID do arquivo do Google Drive
-        file_id = "1ek_Em7R8HEbjL9jRtTg8uB8fZmumVudg"
-        url = f"https://drive.google.com/uc?id={file_id}"
+        file_id = "1Mzyx2SH2exU4366oK8BXTdSVEj-UZ0M3"
+        url = f"https://drive.google.com/uc?id= {file_id}"
 
         # Cria um caminho temporário adequado para Windows/Linux/Mac
         temp_dir = tempfile.gettempdir()
