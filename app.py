@@ -218,22 +218,32 @@ def show_header():
 def load_pipeline():
     try:
         # Novo ID do arquivo do Google Drive
-        file_id = "1Mzyx2SH2exU4366oK8BXTdSVEj-UZ0M3"
-        url = f"https://drive.google.com/uc?id= {file_id}"
+        file_id = "1gVpABJVI90q1G8Kfl0YHJXbG5IZzkqlI"
+        url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
         # Cria um caminho temporário adequado para Windows/Linux/Mac
         temp_dir = tempfile.gettempdir()
         output_path = os.path.join(temp_dir, "pipeline.pkl")
 
-        gdown.download(url, output_path, quiet=False)
+        st.write(f"Baixando o modelo de: {url}") # Log para depuração
+        gdown.download(url, output_path, quiet=False, fuzzy=True) # fuzzy=True pode ajudar com alguns links diretos
+        st.write(f"Modelo salvo em: {output_path}") # Log para depuração
 
+        # Verifica se o arquivo foi baixado e não está vazio
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            st.error(f"Erro: O download do arquivo falhou ou o arquivo está vazio. Verifique o link e as permissões.")
+            return None, None
+        
         with open(output_path, "rb") as f:
             obj = joblib.load(f)
 
+        st.success("Pipeline carregado com sucesso!") # Mensagem de sucesso
         return obj['pipeline'], obj['base_cols']
 
     except Exception as e:
         st.error(f"Erro ao carregar o pipeline: {e}")
+        if 'output_path' in locals() and os.path.exists(output_path):
+            st.error(f"Tamanho do arquivo baixado '{output_path}': {os.path.getsize(output_path)} bytes.")
         return None, None
 
 # ==============================================
